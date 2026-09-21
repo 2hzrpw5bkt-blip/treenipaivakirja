@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#121417">
+<title>Treenipäiväkirja</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F4F4EF;--surface:#FFFFFF;--line:#DCDDD5;--text:#17181A;--muted:#6B6F75;
+  --accent:#8A9A00;--accent-ink:#17181A;--chip:#EDEEE6;--up:#2E7D4F;--down:#B5541B;--err:#B5541B;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121417;--surface:#1B1E23;--line:#2B2F36;--text:#EDEDE8;--muted:#8B9098;
+    --accent:#D7F000;--accent-ink:#121417;--chip:#242830;--up:#7BD48F;--down:#F0A060;--err:#F0A060;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:Barlow,system-ui,sans-serif;font-size:16px;line-height:1.4;padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:640px;margin:0 auto;padding-block:0 110px;padding-inline:16px}
+h1,h2,h3{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;text-wrap:balance;margin:0}
+h1{font-size:2.4rem;font-weight:700;line-height:1;padding-top:20px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:2px;font-size:.8rem;color:var(--muted)}
+.field input{font:500 1rem Barlow,system-ui,sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:8rem}
+.status{color:var(--muted);font-size:.85rem;margin:8px 0 10px;min-height:1.2em}
+.status.err{color:var(--err)}
+.people{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.person{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:5px 12px;font:500 .9rem Barlow,system-ui,sans-serif;cursor:pointer}
+.person[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);display:flex;gap:6px;padding-block:10px;z-index:2}
+.tab{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:10px 4px;font:600 .95rem Barlow,system-ui,sans-serif;cursor:pointer;text-align:center}
+.tab small{display:block;font-weight:400;color:var(--muted);font-size:.75rem}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tab[aria-selected="true"] small{color:var(--accent-ink);opacity:.75}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.day{display:none}.day.on{display:block}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 10px}
+.dayhead h2{font-size:1.6rem;font-weight:700}
+.dayhead span{color:var(--muted);font-size:.85rem}
+.ro{background:var(--chip);border-radius:8px;padding:8px 12px;font-size:.88rem;color:var(--muted);margin-bottom:10px}
+.ex{padding:12px 0;border-top:1px solid var(--line)}
+.ex:last-of-type{border-bottom:1px solid var(--line)}
+.exhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+.ex h3{font-size:1.05rem;font-weight:600;font-family:Barlow,system-ui,sans-serif}
+.target{color:var(--muted);font-size:.85rem;white-space:nowrap}
+.note{color:var(--muted);font-size:.85rem;margin:-4px 0 8px}
+.hdr,.row{display:grid;grid-template-columns:2.2rem 1fr 1fr minmax(0,1.4fr);gap:8px;align-items:center}
+.hdr{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.row{margin-bottom:6px}
+.row .n{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.row input{width:100%;min-width:0;font:500 1.05rem Barlow,system-ui,sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-variant-numeric:tabular-nums}
+.row input:disabled{opacity:.6}
+.row input::placeholder{color:var(--muted);opacity:.7}
+.prev{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prev.up{color:var(--up)}.prev.down{color:var(--down)}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);display:flex;justify-content:center}
+.bar button{flex:1;max-width:608px;border:0;border-radius:10px;padding:14px;font:700 1.1rem "Barlow Condensed",Barlow,system-ui,sans-serif;letter-spacing:.03em;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.bar button:disabled{opacity:.5;cursor:default}
+.hist{margin-top:28px}
+.hist h2{font-size:1.3rem;margin-bottom:8px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:.92rem;align-items:center}
+.item span{color:var(--muted);font-variant-numeric:tabular-nums}
+.item b{font-weight:600}
+.item button{background:none;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:2px 8px;font:500 .82rem Barlow,system-ui,sans-serif;cursor:pointer}
+.empty{color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Treenipäiväkirja</h1>
+    <label class="field">Päivämäärä<input type="date" id="date"></label>
+  </div>
+  <div class="top" style="margin-top:8px">
+    <label class="field">Oma nimi<input type="text" id="me" placeholder="esim. Pyry" autocomplete="off"></label>
+  </div>
+  <div class="status" id="status">Ladataan…</div>
+
+  <div class="people" id="people"></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="days"></div>
+
+  <div class="hist">
+    <h2>Viimeisimmät treenit</h2>
+    <div id="hist"><span class="empty">Ei vielä kirjauksia.</span></div>
+  </div>
+</div>
+<div class="bar"><button id="save" disabled>Tallenna treeni</button></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  // ==== ASETUKSET: täytä nämä Supabasesta (Project Settings → API) ====
+  var SUPABASE_URL = "https://cbvjenlwzqlqqfrswuyg.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNidmplbmx3enFscXFmcnN3dXlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5Nzc5NTksImV4cCI6MjEwNTU1Mzk1OX0.BKBsUjz2wkJy9B8M2CfF0rHo_TYs3gEp5ic3C8ly6ro";
+  // =====================================================================
+
+  var PROGRAM=[
+    {id:'d1',name:'Rinta & selkä',info:'Lepo 2–3 min isoissa',ex:[
+      {id:'vinopenkki',name:'Vinopenkki käsipainoilla',sets:2,target:'6–10 · 10–12'},
+      {id:'flyet',name:'Flyet',sets:2,target:'2 × 12–15'},
+      {id:'soutu',name:'Raskas soutu',sets:2,target:'2 × 8–12'},
+      {id:'ylatalja',name:'Ylätalja',sets:2,target:'2 × 8–12'},
+      {id:'vipunostot1',name:'Vipunostot',sets:2,target:'2 × 12–20'},
+      {id:'hauis1',name:'Hauiskääntö',sets:2,target:'2 × 12–15'},
+      {id:'ojentaja1',name:'Ojentajat taljassa',sets:2,target:'2 × 12–15'}
+    ]},
+    {id:'d2',name:'Jalat',info:'Kevyt kuormitus · n. 35 min',ex:[
+      {id:'koukistus',name:'Reisikoukistus',sets:2,target:'2 × 10–15',note:'Failureen asti'},
+      {id:'prassi',name:'Jalkaprässi',sets:2,target:'2 × 10–15',note:'Jätä 1–2 toistoa varastoon'},
+      {id:'ojennus',name:'Reisiojennus',sets:2,target:'2 × 12–20',note:'Failureen asti'},
+      {id:'rdl',name:'RDL',sets:1,target:'1 × 8–10',note:'Kohtuullinen paino, 2 toistoa varastoon'},
+      {id:'pohkeet',name:'Pohkeet',sets:2,target:'2 × 10–15'},
+      {id:'vatsat',name:'Vatsat',sets:2,target:'2 × 10–15'}
+    ]},
+    {id:'d3',name:'Olkapäät & kädet',info:'Pumppipäivä · lepo 45–60 s käsissä',ex:[
+      {id:'penkki_laite',name:'Penkkipunnerrus laitteessa',sets:1,target:'1 × 10–15'},
+      {id:'kaapelisoutu',name:'Kaapelisoutu',sets:1,target:'1 × 10–15'},
+      {id:'pystypunnerrus',name:'Pystypunnerrus smithissä',sets:2,target:'6–10 · 10–12'},
+      {id:'vipunostot3',name:'Vipunostot',sets:2,target:'2 × 12–20',note:'Viimeinen sarja pudotussarjana'},
+      {id:'takaolkapaat',name:'Takaolkapäät pec deckissä',sets:2,target:'2 × 12–20'},
+      {id:'hauis3',name:'Hauiskääntö',sets:2,target:'2 × 10–15'},
+      {id:'ojentaja3',name:'Ojentajat taljassa',sets:2,target:'2 × 10–15'},
+      {id:'hauis_vino',name:'Hauiskääntö vinopenkissä',sets:2,target:'2 × 10–15'},
+      {id:'ojentaja_tanko',name:'Ojentajat pään yli tangolla',sets:2,target:'2 × 10–15',note:'Viimeinen sarja rest-pause: failure, 15 s tauko, jatka, 2 kertaa'}
+    ]}
+  ];
+
+  var $=function(s){return document.querySelector(s)};
+  var tabsEl=$('#tabs'),daysEl=$('#days'),status=$('#status'),saveBtn=$('#save'),dateEl=$('#date'),histEl=$('#hist'),peopleEl=$('#people'),meEl=$('#me');
+  var sb=null,rows={},current='d1',me='',viewing='';
+
+  function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  function fmt(iso){var p=iso.split('-');return p[2]+'.'+p[1]+'.'+p[0]}
+  function slug(s){return s.trim().toLowerCase().replace(/[^a-z0-9äöå]+/g,'-').replace(/^-|-$/g,'')}
+  function setStatus(t,err){status.textContent=t;status.className='status'+(err?' err':'')}
+  dateEl.value=today();
+
+  // ---- UI build ----
+  PROGRAM.forEach(function(d,i){
+    var b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.dataset.day=d.id;
+    b.innerHTML='Päivä '+(i+1)+'<small>'+d.name+'</small>';b.addEventListener('click',function(){show(d.id)});tabsEl.appendChild(b);
+    var s=document.createElement('section');s.className='day';s.id=d.id;
+    var h='<div class="dayhead"><h2>'+d.name+'</h2><span>'+d.info+'</span></div><div class="ro" id="ro-'+d.id+'" hidden></div>';
+    d.ex.forEach(function(e){
+      h+='<div class="ex"><div class="exhead"><h3>'+e.name+'</h3><span class="target">'+e.target+'</span></div>';
+      if(e.note)h+='<div class="note">'+e.note+'</div>';
+      h+='<div class="hdr"><span></span><span>kg</span><span>toistot</span><span>edellinen</span></div>';
+      for(var k=0;k<e.sets;k++){
+        h+='<div class="row"><span class="n">'+(k+1)+'</span>'+
+          '<input type="number" inputmode="decimal" step="0.5" min="0" placeholder="kg" id="'+d.id+'-'+e.id+'-w'+k+'">'+
+          '<input type="number" inputmode="numeric" min="0" placeholder="toistot" id="'+d.id+'-'+e.id+'-r'+k+'">'+
+          '<span class="prev" id="'+d.id+'-'+e.id+'-p'+k+'">–</span></div>';
+      }
+      h+='</div>';
+    });
+    s.innerHTML=h;daysEl.appendChild(s);
+  });
+
+  function show(id){
+    current=id;
+    tabsEl.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-selected',t.dataset.day===id?'true':'false')});
+    daysEl.querySelectorAll('.day').forEach(function(d){d.classList.toggle('on',d.id===id)});
+    try{localStorage.setItem('tp-day',id)}catch(e){}
+    fillForm();
+  }
+
+  // ---- data helpers ----
+  function rowId(person,date,day){return slug(person)+'_'+date+'_'+day}
+  function all(){return Object.keys(rows).map(function(k){return rows[k]})}
+  function people(){
+    var set={};all().forEach(function(r){set[r.person]=1});if(me)set[me]=1;
+    return Object.keys(set).sort(function(a,b){return a===me?-1:b===me?1:a.localeCompare(b)});
+  }
+  function sessionsFor(person,day){
+    return all().filter(function(r){return r.person===person&&r.day===day}).sort(function(a,b){return a.date<b.date?1:-1});
+  }
+  function collect(day){
+    var d=PROGRAM.find(function(x){return x.id===day}),sets={};
+    d.ex.forEach(function(e){var arr=[];for(var k=0;k<e.sets;k++){
+      var w=$('#'+day+'-'+e.id+'-w'+k).value,r=$('#'+day+'-'+e.id+'-r'+k).value;
+      arr.push({w:w===''?null:Number(w),r:r===''?null:Number(r)});
+    }sets[e.id]=arr});
+    return sets;
+  }
+
+  function renderPeople(){
+    var list=people();
+    if(!viewing||list.indexOf(viewing)<0)viewing=me||list[0]||'';
+    peopleEl.innerHTML=list.map(function(p){return '<button class="person" aria-pressed="'+(p===viewing)+'" data-p="'+p.replace(/"/g,'&quot;')+'">'+(p===me?p+' (minä)':p)+'</button>'}).join('');
+    peopleEl.querySelectorAll('.person').forEach(function(b){b.addEventListener('click',function(){viewing=b.dataset.p;renderPeople();fillForm()})});
+  }
+
+  function fillForm(){
+    var day=current,d=PROGRAM.find(function(x){return x.id===day});
+    var own=viewing===me&&!!me;
+    var ro=$('#ro-'+day);
+    ro.hidden=own;ro.textContent=viewing?viewing+'n treenit – vain katselu. Valitse oma nimesi kirjataksesi.':'Kirjoita oma nimesi yllä, niin voit kirjata.';
+    saveBtn.disabled=!own||!sb;
+    var cur=rows[rowId(viewing,dateEl.value,day)];
+    var prev=sessionsFor(viewing,day).filter(function(s){return s.date<dateEl.value})[0];
+    d.ex.forEach(function(e){for(var k=0;k<e.sets;k++){
+      var wi=$('#'+day+'-'+e.id+'-w'+k),ri=$('#'+day+'-'+e.id+'-r'+k),pi=$('#'+day+'-'+e.id+'-p'+k);
+      wi.disabled=ri.disabled=!own;
+      var c=cur&&cur.sets[e.id]&&cur.sets[e.id][k];
+      wi.value=c&&c.w!=null?c.w:'';ri.value=c&&c.r!=null?c.r:'';
+      var p=prev&&prev.sets[e.id]&&prev.sets[e.id][k];
+      pi.className='prev';
+      if(p&&(p.w!=null||p.r!=null)){pi.textContent=(p.w!=null?p.w+' kg':'')+(p.r!=null?' × '+p.r:'');
+        if(c&&c.w!=null&&p.w!=null){var a=c.w*(c.r||0),b=p.w*(p.r||0);if(a>b)pi.classList.add('up');else if(a<b)pi.classList.add('down')}
+      }else pi.textContent=prev?'–':'ei aiempaa';
+    }});
+    renderHist();
+  }
+
+  function renderHist(){
+    var list=all().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.updated_at<b.updated_at?1:-1)}).slice(0,15);
+    if(!list.length){histEl.innerHTML='<span class="empty">Ei vielä kirjauksia.</span>';return}
+    histEl.innerHTML=list.map(function(s){
+      var d=PROGRAM.find(function(x){return x.id===s.day});var n=0,vol=0;
+      Object.keys(s.sets||{}).forEach(function(e){(s.sets[e]||[]).forEach(function(x){if(x.w!=null&&x.r!=null){n++;vol+=x.w*x.r}})});
+      return '<div class="item"><div><b>'+s.person+'</b> · '+fmt(s.date)+' · '+(d?d.name:s.day)+'<br><span>'+n+' sarjaa · '+Math.round(vol)+' kg yhteensä</span></div><button data-open="'+s.id+'">Avaa</button></div>';
+    }).join('');
+    histEl.querySelectorAll('button[data-open]').forEach(function(b){b.addEventListener('click',function(){
+      var r=rows[b.dataset.open];if(!r)return;viewing=r.person;dateEl.value=r.date;renderPeople();show(r.day);window.scrollTo({top:0});
+    })});
+  }
+
+  // ---- persistence ----
+  function cacheSave(){try{localStorage.setItem('tp-rows',JSON.stringify(rows))}catch(e){}}
+  function cacheLoad(){try{var s=localStorage.getItem('tp-rows');if(s)rows=JSON.parse(s)}catch(e){}}
+
+  async function refresh(){
+    if(!sb)return;
+    var res=await sb.from('sessions').select('*').order('date',{ascending:false}).limit(500);
+    if(res.error){setStatus('Haku epäonnistui: '+res.error.message,true);return}
+    rows={};res.data.forEach(function(r){rows[r.id]=r});
+    cacheSave();renderPeople();fillForm();
+  }
+
+  async function save(){
+    if(!me){setStatus('Kirjoita ensin oma nimesi.',true);meEl.focus();return}
+    var date=dateEl.value;if(!date){setStatus('Valitse päivämäärä.',true);return}
+    var row={id:rowId(me,date,current),person:me,date:date,day:current,sets:collect(current),updated_at:new Date().toISOString()};
+    saveBtn.disabled=true;setStatus('Tallennetaan…');
+    var res=await sb.from('sessions').upsert(row);
+    if(res.error){setStatus('Tallennus epäonnistui: '+res.error.message,true);saveBtn.disabled=false;return}
+    rows[row.id]=row;cacheSave();setStatus('Tallennettu '+fmt(date)+'.');saveBtn.disabled=false;fillForm();
+  }
+
+  // ---- boot ----
+  saveBtn.addEventListener('click',save);
+  dateEl.addEventListener('change',fillForm);
+  meEl.addEventListener('change',function(){me=meEl.value.trim();try{localStorage.setItem('tp-me',me)}catch(e){};viewing=me;renderPeople();fillForm()});
+  try{me=localStorage.getItem('tp-me')||''}catch(e){}
+  meEl.value=me;viewing=me;
+  cacheLoad();renderPeople();
+  var savedDay=null;try{savedDay=localStorage.getItem('tp-day')}catch(e){}
+  show(savedDay&&PROGRAM.some(function(d){return d.id===savedDay})?savedDay:'d1');
+
+  if(!SUPABASE_URL||!SUPABASE_ANON_KEY){setStatus('Supabase-asetukset puuttuvat tiedostosta.',true);return}
+  if(!window.supabase){setStatus('Yhteyskirjastoa ei saatu ladattua.',true);return}
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  refresh().then(function(){setStatus('')});
+  try{
+    sb.channel('sessions-live').on('postgres_changes',{event:'*',schema:'public',table:'sessions'},function(){refresh()}).subscribe();
+  }catch(e){}
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')refresh()});
+})();
+</script>
+</body>
+</html>
