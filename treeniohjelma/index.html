@@ -223,7 +223,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   async function refresh(){
     if(!sb)return;
     var res=await sb.from('sessions').select('*').eq('person',PERSON).order('date',{ascending:false}).limit(500);
-    if(res.error){setStatus('Haku epäonnistui: '+res.error.message,true);return}
+    if(res.error){setStatus('Yhteys tallennukseen ei toimi juuri nyt. Tarkista netti ja päivitä sivu.',true);return}
+    setStatus('');
     rows={};res.data.forEach(function(r){if(DAYS.indexOf(r.day)>=0)rows[r.id]=r});
     cacheSave();renderPeople();fillForm();
   }
@@ -233,7 +234,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     var row={id:rowId(me,date,current),person:me,date:date,day:current,sets:collect(current),updated_at:new Date().toISOString()};
     saveBtn.disabled=true;setStatus('Tallennetaan…');
     var res=await sb.from('sessions').upsert(row);
-    if(res.error){setStatus('Tallennus epäonnistui: '+res.error.message,true);saveBtn.disabled=false;return}
+    if(res.error){setStatus('Tallennus EI onnistunut ('+res.error.message+'). Älä tyhjennä kenttiä, yritä uudelleen kun netti toimii.',true);saveBtn.disabled=false;return}
     rows[row.id]=row;cacheSave();setStatus('Tallennettu '+fmt(date)+'.');saveBtn.disabled=false;fillForm();
   }
 
@@ -247,7 +248,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   if(!SUPABASE_URL||!SUPABASE_ANON_KEY){setStatus('Supabase-asetukset puuttuvat tiedostosta.',true);return}
   if(!window.supabase){setStatus('Yhteyskirjastoa ei saatu ladattua.',true);return}
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-  refresh().then(function(){setStatus('')});
+  fillForm();
+  refresh().catch(function(e){setStatus('Yhteys tallennukseen ei toimi juuri nyt. Tarkista netti ja päivitä sivu.',true)});
   try{
     sb.channel('treeniohjelma-live').on('postgres_changes',{event:'*',schema:'public',table:'sessions'},function(){refresh()}).subscribe();
   }catch(e){}
