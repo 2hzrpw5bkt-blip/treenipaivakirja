@@ -240,7 +240,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     if(!sb)return;
     var res=await sb.from('sessions').select('*').order('date',{ascending:false}).limit(500);
     if(res.error){setStatus('Haku epäonnistui: '+res.error.message,true);return}
-    rows={};res.data.forEach(function(r){rows[r.id]=r});
+    rows={};res.data.forEach(function(r){if(r.person!=='isa-treeniohjelma')rows[r.id]=r});
     cacheSave();renderPeople();fillForm();
   }
 
